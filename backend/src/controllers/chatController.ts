@@ -194,7 +194,7 @@ export const sendMessage = async (req: Request, res: Response) => {
       parts: [{ text: msg.content }],
     }));
 
-    const provider = (reqProvider || process.env.LLM_PROVIDER || 'google').toLowerCase() as 'google' | 'openai';
+    const provider = (reqProvider || process.env.LLM_PROVIDER || 'openai').toLowerCase() as 'google' | 'openai';
     const activeModel = provider === 'openai' 
       ? (reqModel || process.env.OPENAI_MODEL || 'gpt-4o')
       : (reqModel || process.env.GEMINI_MODEL || 'gemini-1.5-flash');

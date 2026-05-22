@@ -15,7 +15,7 @@ function App() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [currentView, setCurrentView] = useState<'chat' | 'dashboard'>('chat');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'google'>('google');
+  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'google'>('openai');
 
   const activeChat = conversations.find(c => c.id === activeChatId) || null;
 

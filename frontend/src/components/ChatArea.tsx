@@ -93,8 +93,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
                 onChange={(e) => setSelectedProvider(e.target.value as 'openai' | 'google')}
                 className="provider-select"
               >
-                <option value="google">🤖 Gemini (gemini-1.5-flash)</option>
-                <option value="openai">🔥 OpenAI (gpt-4o)</option>
+                <option value="openai">OpenAI (gpt-4o)</option>
               </select>
             </div>
           )}
