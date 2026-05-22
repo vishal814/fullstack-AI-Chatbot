@@ -21,11 +21,11 @@ graph TD
     API -->|5. Relational Write| AIResponse[Save Assistant Message in DB]
     
     %% Non-Blocking Ingestion
-    API -.->|6. Asynchronous Background Post| Ingest[/api/logs Ingestion Pipeline]
-    Ingest -.->|7. Structured Row Insert| LogsTable[(PostgreSQL inference_logs Table)]
+    API -.->|6. Asynchronous Background Post| Ingest["/api/logs Ingestion Pipeline"]
+    Ingest -.->|7. Structured Row Insert| LogsTable[("PostgreSQL inference_logs Table")]
 
     %% Metrics Polling
-    UI -->|8. Polls metrics every 5s| MetricsEndpoint[/api/metrics]
+    UI -->|8. Polls metrics every 5s| MetricsEndpoint["/api/metrics"]
     MetricsEndpoint -->|9. Reads Aggregations| LogsTable
     MetricsEndpoint -->|10. Live Graphs Refresh| UI
 ```
