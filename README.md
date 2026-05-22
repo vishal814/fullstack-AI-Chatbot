@@ -1,10 +1,10 @@
-# Enterprise-Grade LLM Ingestion Pipeline & Chatbot Application
+#LLM Ingestion Pipeline & Chatbot Application
 
 A high-performance, real-time logging, telemetry, and conversational platform designed for enterprise LLM operations. This system integrates an asynchronous, event-driven log ingestion queue, real-time telemetry charting, an automated pre-save regulatory PII redaction filter, and a premium chat interface featuring live **Server-Sent Events (SSE)** response streaming.
 
 ---
 
-## 🚀 Key Architectural Upgrades
+##  Key Architectural Upgrades
 
 This platform has been elevated from a basic MVP to an enterprise-ready pipeline with the following key components:
 
@@ -23,7 +23,7 @@ This platform has been elevated from a basic MVP to an enterprise-ready pipeline
 
 ---
 
-## 📊 System Architecture Flow
+##  System Architecture Flow
 
 The following diagram illustrates the lifecycle of a prompt execution, live SSE stream rendering, non-blocking asynchronous event ingestion, and sliding-window dashboard metric updates:
 
@@ -88,7 +88,7 @@ graph TD
 
 ---
 
-## 🗄️ Relational & Operational Database Schema
+##  Relational & Operational Database Schema
 
 The PostgreSQL schema balances structured relational integrity for chat threads alongside high-performance indexing for high-velocity logging telemetry.
 
@@ -136,7 +136,7 @@ erDiagram
 
 ---
 
-## 🛠️ Local Development & Setup
+##  Local Development & Setup
 
 Follow these steps to configure and run the backend API server and frontend React application locally.
 
@@ -198,7 +198,7 @@ The client dashboard and chatbot interface will be available at `http://localhos
 
 ---
 
-## 🐳 Multi-Container Orchestration (Docker Compose)
+##  Multi-Container Orchestration (Docker Compose)
 
 The workspace features a multi-container Docker Compose file (`docker-compose.yml`) which coordinates Postgres, the Node/Express backend pipeline, and the static frontend UI served behind Nginx.
 
@@ -215,7 +215,7 @@ docker-compose up --build
 
 ---
 
-## ☸️ Self-Hosted Kubernetes (K8s) Deployment
+##  Self-Hosted Kubernetes (K8s) Deployment
 
 The application features standard, production-ready Kubernetes manifests in the `/k8s/` directory to facilitate smooth self-hosted deployment.
 
@@ -255,6 +255,6 @@ kubectl get pods,services,ingress -n default
 
 ---
 
-## 🛡️ Regulatory Compliance & Verification
+##  Regulatory Compliance & Verification
 - **Verified Type Safety:** Complete compiler coverage checks (`npx tsc --noEmit`) run across both backend and frontend workspaces to maintain strict TypeScript schema safety.
 - **Credential Hygiene:** Local environment files (`.env`) are strictly isolated and locked from git check-ins using rules established inside `.gitignore` files.
