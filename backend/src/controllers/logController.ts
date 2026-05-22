@@ -95,7 +95,7 @@ export const getDashboardMetrics = async (req: Request, res: Response) => {
       },
     });
 
-    const modelStats = modelGroupStats.map(stat => ({
+    const modelStats = modelGroupStats.map((stat: any) => ({
       model: stat.model,
       count: stat._count._all,
       avgLatency: Math.round(stat._avg.latencyMs || 0),
