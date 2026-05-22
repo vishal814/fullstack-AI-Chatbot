@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+jspm_packages/
+web_packages/
+
+# Environment configurations (CRITICAL: Do NOT upload secrets!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Production/Build outputs
+dist/
+build/
+out/
+.next/
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# Prisma specific
+/backend/prisma/dev.db
+/backend/prisma/dev.db-journal
