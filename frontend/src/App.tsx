@@ -212,7 +212,7 @@ function App() {
 
   // 6. Cancel conversation session
   const handleCancelChat = async (id: string) => {
-    if (!confirm('Are you sure you want to cancel this conversation? You will not be able to log any more inferences to it.')) {
+    if (!confirm('Are you sure you want to end this conversation? You will not be able to log any more inferences to it.')) {
       return;
     }
 

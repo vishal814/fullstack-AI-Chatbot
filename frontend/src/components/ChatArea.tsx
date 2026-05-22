@@ -100,7 +100,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
           {activeChat.status === 'ACTIVE' && (
             <button onClick={() => onCancelChat(activeChat.id)} className="cancel-chat-btn">
-              Cancel Chat
+              End Conversation
             </button>
           )}
         </div>
@@ -137,7 +137,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       <footer className="input-container">
         {activeChat.status === 'CANCELLED' ? (
           <div className="cancelled-indicator">
-            ⚠️ This conversation session has been cancelled. No further inference metadata can be logged to this session.
+            ⚠️ This conversation session has been ended. No further inference metadata can be logged to this session.
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="input-form">

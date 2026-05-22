@@ -67,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="conversation-title-row">
                 <span className="conversation-title">{chat.title}</span>
                 <span className={`conversation-status ${chat.status === 'ACTIVE' ? 'status-active' : 'status-cancelled'}`}>
-                  {chat.status}
+                  {chat.status === 'ACTIVE' ? 'ACTIVE' : 'ENDED'}
                 </span>
               </div>
               <span className="conversation-meta">{formatDate(chat.updatedAt)}</span>
