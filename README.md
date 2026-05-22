@@ -136,6 +136,28 @@ erDiagram
 
 ---
 
+##  Architectural Notes
+
+### 1. Ingestion Flow & Non-Blocking Design
+- **Client Non-Blocking:** The client triggers a fire-and-forget HTTP `POST` to `/api/logs` upon receiving completion tokens or experiencing an execution error. 
+- **Immediate Response:** The backend log controller immediately registers the payload, emits a `"log.received"` event through a local `EventEmitter` queue instance (`IngestionEmitter`), and returns a `202 Accepted` response. The client thread is never kept waiting for database operations to conclude.
+
+### 2. High-Performance Queue Batching (1000ms Heartbeat Worker)
+- **Batch Processing:** A background worker runs on a continuous `1000ms` heartbeat cycle. 
+- **Bulk Inserting:** Every second, it drains accumulated logs from the memory buffer queue and writes them in a single batch using Prisma's highly efficient `createMany` bulk-write execution. This reduces query processing overhead, limits network round-trips, and keeps DB connection pools clean.
+
+### 3. Pre-Save Automated PII Redactor
+- **In-Line Scrubber:** Before flushing batch items into the database, the heartbeat worker passes all log inputs and previews through a series of optimized regular expressions.
+- **Privacy Rules:** The scrubber automatically redacts sensitive consumer details (emails, phone numbers, credit card numbers, and SSNs), replacing them with standard tags like `[REDACTED_EMAIL]`. This prevents raw customer data from being written to persistent log disks.
+
+### 4. Database Failure Resiliency & Scaling Upgrade Options
+- **Failure Toleration:** If the database encounters connection issues, the queue worker holds onto the current log batch in memory and attempts to retry the bulk write during subsequent heartbeat ticks, preventing telemetry loss.
+- **Enterprise Scaling:** To transition this pipeline to handle millions of queries per second:
+  1. **Message Broker Integration:** Swap the simple internal memory-based `EventEmitter` for a Redis Stream or RabbitMQ broker to ensure persistent queueing across multiple stateless cluster instances.
+  2. **Analytical ClickHouse/Cold Tiering:** Partition the `inference_logs` table by month, and establish cron scripts to offload logs older than 90 days into a dedicated analytical engine (like ClickHouse) or cold S3 storage classes to keep primary Postgres instances lean and high-performing.
+
+---
+
 ##  Local Development & Setup
 
 Follow these steps to configure and run the backend API server and frontend React application locally.
