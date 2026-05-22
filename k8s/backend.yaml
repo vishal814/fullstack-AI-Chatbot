@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  PORT: "8000"
+  LLM_PROVIDER: "google"
+  GEMINI_MODEL: "gemini-1.5-flash"
+  OPENAI_MODEL: "gpt-4o"
+  DATABASE_URL: "postgresql://postgres:dev_db_password_99@postgres-db:5432/llm_logger_db?schema=public"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-api
+  labels:
+    app: backend-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-api
+  template:
+    metadata:
+      labels:
+        app: backend-api
+    spec:
+      containers:
+        - name: backend
+          image: llm-logger-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: backend-config
+          env:
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: llm-api-secrets
+                  key: gemini-api-key
+                  optional: true
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: llm-api-secrets
+                  key: openai-api-key
+                  optional: true
+          command: ["sh", "-c", "npx prisma db push && node dist/index.js"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-api
+spec:
+  selector:
+    app: backend-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+  type: ClusterIP

@@ -15,6 +15,7 @@ function App() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [currentView, setCurrentView] = useState<'chat' | 'dashboard'>('chat');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'google'>('google');
 
   const activeChat = conversations.find(c => c.id === activeChatId) || null;
 
@@ -110,11 +111,11 @@ function App() {
     }
   };
 
-  // 5. Send message inside a conversation
+  // 5. Send message inside a conversation with full SSE streaming support
   const handleSendMessage = async (content: string) => {
     if (!activeChatId) return;
 
-    // Instantly show the user's message in the UI for a highly responsive feel
+    // 1. Save user prompt locally first for instantaneous display
     const tempUserMsg: Message = {
       id: crypto.randomUUID(),
       conversationId: activeChatId,
@@ -122,37 +123,88 @@ function App() {
       content,
       createdAt: new Date().toISOString(),
     };
-    setMessages(prev => [...prev, tempUserMsg]);
+
+    // 2. Pre-allocate temporary assistant chat bubble with empty content
+    const tempAssistantMsgId = crypto.randomUUID();
+    const tempAssistantMsg: Message = {
+      id: tempAssistantMsgId,
+      conversationId: activeChatId,
+      role: 'ASSISTANT',
+      content: '',
+      createdAt: new Date().toISOString(),
+    };
+
+    setMessages(prev => [...prev, tempUserMsg, tempAssistantMsg]);
     setIsLoading(true);
 
     try {
       const response = await fetch(`${API_BASE}/api/conversations/${activeChatId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: content }),
+        body: JSON.stringify({ 
+          prompt: content,
+          provider: selectedProvider,
+          model: selectedProvider === 'openai' ? 'gpt-4o' : 'gemini-1.5-flash'
+        }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Replace temp list with database persisted items and add AI response
-        setMessages(prev => {
-          const filtered = prev.filter(m => m.id !== tempUserMsg.id);
-          return [...filtered, data.userMessage, data.assistantMessage];
-        });
-        
-        // Refresh conversations list to update order/timestamps in the sidebar
-        fetchConversations();
-      } else {
-        const errData = await response.json();
-        alert(errData.message || 'Error occurred while sending message');
-        // Roll back prompt on error
-        setMessages(prev => prev.filter(m => m.id !== tempUserMsg.id));
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status} Error calling backend`);
       }
-    } catch (error) {
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) throw new Error('No response body stream reader available');
+
+      let accumulatedAI = '';
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        // Decode binary chunk and add to our string lines buffer
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Maintain incomplete buffer snippet
+
+        for (const line of lines) {
+          const cleanLine = line.trim();
+          if (cleanLine.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(cleanLine.substring(6));
+
+              // Append streaming token/character chunks
+              if (data.chunk) {
+                accumulatedAI += data.chunk;
+                setMessages(prev =>
+                  prev.map(m => (m.id === tempAssistantMsgId ? { ...m, content: accumulatedAI } : m))
+                );
+              }
+
+              // Finished! Synchronize official database elements to matching list IDs
+              if (data.done) {
+                setMessages(prev => {
+                  const filtered = prev.filter(m => m.id !== tempUserMsg.id && m.id !== tempAssistantMsgId);
+                  return [...filtered, data.userMessage, data.assistantMessage];
+                });
+                fetchConversations();
+              }
+
+              if (data.error) {
+                alert(`Streaming error: ${data.error}`);
+              }
+            } catch (e) {
+              // Ignore parser adjustments
+            }
+          }
+        }
+      }
+    } catch (error: any) {
       console.error('Send message request failed:', error);
-      alert('Network error connecting to API');
-      setMessages(prev => prev.filter(m => m.id !== tempUserMsg.id));
+      alert(error.message || 'Network error connecting to API');
+      // Rollback temporary messages on failure
+      setMessages(prev => prev.filter(m => m.id !== tempUserMsg.id && m.id !== tempAssistantMsgId));
     } finally {
       setIsLoading(false);
     }
@@ -200,6 +252,8 @@ function App() {
             isLoading={isLoading}
             onSendMessage={handleSendMessage}
             onCancelChat={handleCancelChat}
+            selectedProvider={selectedProvider}
+            setSelectedProvider={setSelectedProvider}
           />
         ) : (
           <Dashboard metrics={metrics} onRefresh={fetchMetrics} />

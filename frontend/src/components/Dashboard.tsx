@@ -204,6 +204,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ metrics, onRefresh }) => {
         </div>
 
         <div className="glass-panel chart-card">
+          <span className="chart-title">Throughput (Requests / Second)</span>
+          {renderSparkline(
+            metrics.throughputHistory.map(h => ({ time: h.time, value: h.throughput })),
+            'throughputGradient',
+            '#10b981',
+            'Throughput',
+            ' req/s'
+          )}
+        </div>
+
+        <div className="glass-panel chart-card">
           <span className="chart-title">Error Rate Rolling Curve</span>
           {renderSparkline(
             metrics.errorRateHistory.map(h => ({ time: h.time, value: h.errorRate * 100 })),
@@ -235,6 +246,63 @@ export const Dashboard: React.FC<DashboardProps> = ({ metrics, onRefresh }) => {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Recent Redacted Database Logs Grid */}
+      <div className="glass-panel logs-grid-card" style={{ padding: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid var(--border-color)' }}>
+          <span className="chart-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            🔒 Compliance Audit Log (Real-time PII Redacted Feed)
+          </span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            Showing last {metrics.recentLogs?.length || 0} DB entries
+          </span>
+        </div>
+        <div className="logs-grid-container">
+          <table className="logs-table">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Provider/Model</th>
+                <th>Latency</th>
+                <th>Tokens (In/Out)</th>
+                <th>Status</th>
+                <th>Input Message (Redacted)</th>
+                <th>Output Response (Redacted)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!metrics.recentLogs || metrics.recentLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>
+                    No audit records registered in the database yet.
+                  </td>
+                </tr>
+              ) : (
+                metrics.recentLogs.map((log) => (
+                  <tr key={log.id}>
+                    <td>{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
+                    <td>
+                      <span className="provider-tag">{log.provider}</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '6px' }}>{log.model}</span>
+                    </td>
+                    <td style={{ color: 'var(--accent-violet-light)', fontWeight: '600' }}>{log.latencyMs} ms</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>
+                      {log.inputTokens} / {log.outputTokens}
+                    </td>
+                    <td>
+                      <span className={`status-tag ${log.status.toLowerCase()}`}>
+                        {log.status}
+                      </span>
+                    </td>
+                    <td title={log.inputPreview}>{log.inputPreview}</td>
+                    <td title={log.outputPreview}>{log.outputPreview}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

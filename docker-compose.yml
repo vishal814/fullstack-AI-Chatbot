@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: dev_db_password_99
+      POSTGRES_DB: llm_logger_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d llm_logger_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend-api
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://postgres:dev_db_password_99@postgres-db:5432/llm_logger_db?schema=public
+      PORT: 8000
+      LLM_PROVIDER: google
+      GEMINI_MODEL: gemini-1.5-flash
+      OPENAI_MODEL: gpt-4o
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    command: >
+      sh -c "npx prisma db push && node dist/index.js"
+
+  frontend-ui:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend-ui
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend-api
+
+volumes:
+  pgdata:

@@ -46,9 +46,29 @@ export interface DashboardMetrics {
     time: string;
     errorRate: number;
   }[];
+  throughputHistory: {
+    time: string;
+    throughput: number;
+  }[];
   modelStats: {
     model: string;
     count: number;
     avgLatency: number;
   }[];
+  recentLogs: {
+    id: string;
+    conversationId: string;
+    messageId?: string | null;
+    provider: string;
+    model: string;
+    latencyMs: number;
+    inputTokens: number;
+    outputTokens: number;
+    status: 'SUCCESS' | 'ERROR';
+    errorMessage?: string | null;
+    inputPreview: string;
+    outputPreview: string;
+    timestamp: Date | string;
+  }[];
 }
+

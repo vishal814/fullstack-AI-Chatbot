@@ -1,7 +1,83 @@
 import { Request, Response } from 'express';
+import { EventEmitter } from 'events';
 import { z } from 'zod';
 import prisma from '../services/db';
 import { DashboardMetrics } from '../types';
+
+// Central Event Emitter for Ingestion Pipeline
+const IngestionEmitter = new EventEmitter();
+const ingestionQueue: any[] = [];
+
+// Regex-based PII Redactor for privacy compliance
+export const redactPII = (text: string): string => {
+  if (!text) return text;
+  
+  // 1. Email addresses
+  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  
+  // 2. Phone Numbers (matches international and standard local formats like 123-456-7890, +1 (123) 456-7890)
+  const phoneRegex = /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
+  
+  // 3. Credit Cards (16-digit spaced sequences)
+  const cardRegex = /\b(?:\d{4}[-.\s]?){3}\d{4}\b/g;
+  
+  // 4. SSNs (Social Security Numbers)
+  const ssnRegex = /\b\d{3}-\d{2}-\d{4}\b|\b\d{9}\b/g;
+
+  return text
+    .replace(emailRegex, '[REDACTED_EMAIL]')
+    .replace(phoneRegex, '[REDACTED_PHONE]')
+    .replace(cardRegex, '[REDACTED_CARD]')
+    .replace(ssnRegex, '[REDACTED_SSN]');
+};
+
+// Event subscriber that processes and redacts logs before pushing to buffer
+IngestionEmitter.on('log.received', (logData: any) => {
+  try {
+    // Redact sensitive inputs/outputs for PII compliance before saving
+    logData.inputPreview = redactPII(logData.inputPreview);
+    logData.outputPreview = redactPII(logData.outputPreview);
+    
+    ingestionQueue.push(logData);
+  } catch (err) {
+    console.error('[Ingestion Event Subscriber Error]:', err);
+  }
+});
+
+// Periodic Batch Flush Worker (Heartbeat) - Writes queued logs every 1000ms
+setInterval(async () => {
+  if (ingestionQueue.length === 0) return;
+
+  const batch = [...ingestionQueue];
+  ingestionQueue.length = 0; // Clear immediately to capture incoming logs
+
+  try {
+    console.log(`[Event Ingestion Worker] Flushing batch of ${batch.length} logs to database...`);
+    
+    await prisma.inferenceLog.createMany({
+      data: batch.map((item: any) => ({
+        conversationId: item.conversationId,
+        messageId: item.messageId || null,
+        provider: item.provider,
+        model: item.model,
+        latencyMs: item.latencyMs,
+        inputTokens: item.inputTokens,
+        outputTokens: item.outputTokens,
+        status: item.status,
+        errorMessage: item.errorMessage || null,
+        inputPreview: item.inputPreview,
+        outputPreview: item.outputPreview,
+        timestamp: item.timestamp ? new Date(item.timestamp) : new Date(),
+      })),
+    });
+
+    console.log(`[Event Ingestion Worker] Ingested ${batch.length} logs successfully.`);
+  } catch (error) {
+    console.error('[Event Ingestion Worker Error]: Failed to save batch logs:', error);
+    // Push logs back to queue to ensure no data loss
+    ingestionQueue.push(...batch);
+  }
+}, 1000);
 
 // Zod schema for ingestion payload validation
 const logSchema = z.object({
@@ -20,32 +96,16 @@ const logSchema = z.object({
 });
 
 /**
- * Handle log ingestion pipeline requests from the SDK
+ * Handle log ingestion pipeline requests from the SDK (Async, Event-Driven)
  */
 export const ingestLog = async (req: Request, res: Response) => {
   try {
     const validatedData = logSchema.parse(req.body);
     
-    // Extract metadata and insert log into the database
-    const log = await prisma.inferenceLog.create({
-      data: {
-        conversationId: validatedData.conversationId,
-        messageId: validatedData.messageId || null,
-        provider: validatedData.provider,
-        model: validatedData.model,
-        latencyMs: validatedData.latencyMs,
-        inputTokens: validatedData.inputTokens,
-        outputTokens: validatedData.outputTokens,
-        status: validatedData.status,
-        errorMessage: validatedData.errorMessage || null,
-        inputPreview: validatedData.inputPreview,
-        outputPreview: validatedData.outputPreview,
-        timestamp: validatedData.timestamp ? new Date(validatedData.timestamp) : new Date(),
-      },
-    });
+    // Asynchronous ingestion: Emit event and instantly return 202 Accepted
+    IngestionEmitter.emit('log.received', validatedData);
 
-    console.log(`[Ingestion Pipeline] Successfully saved log: ${log.id} (Status: ${log.status})`);
-    return res.status(201).json({ success: true, logId: log.id });
+    return res.status(202).json({ success: true, message: 'Log accepted and queued' });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       console.error('[Ingestion Pipeline Validation Error]:', error.errors);
@@ -139,6 +199,58 @@ export const getDashboardMetrics = async (req: Request, res: Response) => {
       };
     });
 
+    // 4. Calculate Requests/Second Throughput History (last 30 seconds)
+    const now = Date.now();
+    const thirtySecondsAgo = new Date(now - 30 * 1000);
+    const throughputLogs = await prisma.inferenceLog.findMany({
+      where: {
+        timestamp: {
+          gte: thirtySecondsAgo,
+        },
+      },
+      select: {
+        timestamp: true,
+      },
+    });
+
+    const throughputHistory = [];
+    for (let i = 29; i >= 0; i--) {
+      const secTime = now - i * 1000;
+      const secDate = new Date(secTime);
+      const timeLabel = secDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      
+      const count = throughputLogs.filter(log => {
+        const logTime = new Date(log.timestamp).getTime();
+        return logTime >= secTime && logTime < secTime + 1000;
+      }).length;
+
+      throughputHistory.push({
+        time: timeLabel,
+        throughput: count,
+      });
+    }
+
+    // 5. Recent Redacted Database Logs (Retrieve last 50 entries)
+    const recentLogsGrid = await prisma.inferenceLog.findMany({
+      take: 50,
+      orderBy: { timestamp: 'desc' },
+      select: {
+        id: true,
+        conversationId: true,
+        messageId: true,
+        provider: true,
+        model: true,
+        latencyMs: true,
+        inputTokens: true,
+        outputTokens: true,
+        status: true,
+        errorMessage: true,
+        inputPreview: true,
+        outputPreview: true,
+        timestamp: true,
+      },
+    });
+
     const metrics: DashboardMetrics = {
       totalRequests,
       averageLatencyMs,
@@ -147,7 +259,9 @@ export const getDashboardMetrics = async (req: Request, res: Response) => {
       latencyHistory,
       tokensHistory,
       errorRateHistory,
+      throughputHistory,
       modelStats,
+      recentLogs: recentLogsGrid,
     };
 
     return res.status(200).json(metrics);

@@ -799,3 +799,120 @@ body {
   0%, 80%, 100% { transform: scale(0.3); }
   40% { transform: scale(1.0); }
 }
+
+/* Provider Selector Dropdown */
+.provider-selector-container {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+}
+
+.provider-select {
+  padding: 10px 16px;
+  background-color: rgba(20, 20, 32, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: white;
+  font-family: var(--font-primary);
+  font-size: 0.88rem;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(10px);
+}
+
+.provider-select:focus, .provider-select:hover {
+  border-color: var(--accent-violet);
+  background-color: rgba(20, 20, 32, 0.9);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.2);
+}
+
+/* Recent Logs Data Grid Styling */
+.logs-grid-card {
+  grid-column: 1 / -1; /* Stretch across the layout grid */
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.logs-grid-container {
+  flex: 1;
+  overflow: auto;
+  border-radius: 12px;
+  background-color: rgba(6, 6, 12, 0.35);
+  border: 1px solid var(--border-color);
+  max-height: 320px;
+}
+
+.logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.logs-table th {
+  padding: 14px 18px;
+  background-color: rgba(15, 15, 27, 0.85);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.logs-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  color: var(--text-primary);
+  white-space: nowrap;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logs-table tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.logs-table td.text-wrap {
+  white-space: normal;
+  word-break: break-all;
+}
+
+.status-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-tag.success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--accent-emerald);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.status-tag.error {
+  background-color: rgba(244, 63, 94, 0.1);
+  color: var(--accent-rose);
+  border: 1px solid rgba(244, 63, 94, 0.15);
+}
+
+.provider-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+

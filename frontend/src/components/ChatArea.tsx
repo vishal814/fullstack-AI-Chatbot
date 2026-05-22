@@ -15,6 +15,8 @@ interface ChatAreaProps {
   isLoading: boolean;
   onSendMessage: (content: string) => Promise<void>;
   onCancelChat: (id: string) => Promise<void>;
+  selectedProvider: 'openai' | 'google';
+  setSelectedProvider: (provider: 'openai' | 'google') => void;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -23,6 +25,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   isLoading,
   onSendMessage,
   onCancelChat,
+  selectedProvider,
+  setSelectedProvider,
 }) => {
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -72,17 +76,35 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   return (
     <div className="chat-window">
       <header className="workspace-header">
-        <div className="header-info">
-          <div className="logo-dot" style={{ backgroundColor: activeChat.status === 'ACTIVE' ? 'var(--accent-emerald)' : 'var(--accent-rose)', boxShadow: activeChat.status === 'ACTIVE' ? '0 0 12px var(--accent-emerald)' : '0 0 12px var(--accent-rose)' }}></div>
-          <h2 className="header-title">{activeChat.title}</h2>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>ID: {activeChat.id.substring(0, 8)}...</span>
+        <div className="header-left">
+          <div className="header-info">
+            <div className="logo-dot" style={{ backgroundColor: activeChat.status === 'ACTIVE' ? 'var(--accent-emerald)' : 'var(--accent-rose)', boxShadow: activeChat.status === 'ACTIVE' ? '0 0 12px var(--accent-emerald)' : '0 0 12px var(--accent-rose)' }}></div>
+            <h2 className="header-title">{activeChat.title}</h2>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>ID: {activeChat.id.substring(0, 8)}...</span>
+          </div>
         </div>
 
-        {activeChat.status === 'ACTIVE' && (
-          <button onClick={() => onCancelChat(activeChat.id)} className="cancel-chat-btn">
-            Cancel Conversation
-          </button>
-        )}
+        <div className="header-actions">
+          {activeChat.status === 'ACTIVE' && (
+            <div className="provider-selector-container">
+              <select 
+                id="provider-select" 
+                value={selectedProvider} 
+                onChange={(e) => setSelectedProvider(e.target.value as 'openai' | 'google')}
+                className="provider-select"
+              >
+                <option value="google">🤖 Gemini (gemini-1.5-flash)</option>
+                <option value="openai">🔥 OpenAI (gpt-4o)</option>
+              </select>
+            </div>
+          )}
+
+          {activeChat.status === 'ACTIVE' && (
+            <button onClick={() => onCancelChat(activeChat.id)} className="cancel-chat-btn">
+              Cancel Chat
+            </button>
+          )}
+        </div>
       </header>
 
       <div className="messages-list">
