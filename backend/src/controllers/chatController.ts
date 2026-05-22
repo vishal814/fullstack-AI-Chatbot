@@ -182,7 +182,7 @@ export const sendMessage = async (req: Request, res: Response) => {
     const historyLimit = 10;
     const recentMessages = conversation.messages.slice(-historyLimit);
     
-    const formattedHistory = recentMessages.map(msg => ({
+    const formattedHistory = recentMessages.map((msg: any) => ({
       role: msg.role === 'USER' ? 'user' as const : 'model' as const,
       parts: [{ text: msg.content }],
     }));
