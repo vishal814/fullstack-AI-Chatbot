@@ -6,6 +6,8 @@ import type { Message } from './components/ChatArea';
 import { Dashboard } from './components/Dashboard';
 import type { DashboardMetrics } from '../../backend/src/types';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 function App() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -19,7 +21,7 @@ function App() {
   // 1. Fetch conversations on startup
   const fetchConversations = async () => {
     try {
-      const response = await fetch('/api/conversations');
+      const response = await fetch(`${API_BASE}/api/conversations`);
       if (response.ok) {
         const data = await response.json();
         setConversations(data);
@@ -47,7 +49,7 @@ function App() {
 
     const fetchMessages = async () => {
       try {
-        const response = await fetch(`/api/conversations/${activeChatId}/messages`);
+        const response = await fetch(`${API_BASE}/api/conversations/${activeChatId}/messages`);
         if (response.ok) {
           const data = await response.json();
           setMessages(data.messages);
@@ -68,7 +70,7 @@ function App() {
   // 3. Fetch aggregated metrics for the dashboard
   const fetchMetrics = async () => {
     try {
-      const response = await fetch('/api/metrics');
+      const response = await fetch(`${API_BASE}/api/metrics`);
       if (response.ok) {
         const data = await response.json();
         setMetrics(data);
@@ -91,7 +93,7 @@ function App() {
   const handleCreateNewChat = async () => {
     try {
       const title = prompt('Enter a title for the new conversation:') || undefined;
-      const response = await fetch('/api/conversations', {
+      const response = await fetch(`${API_BASE}/api/conversations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title }),
@@ -124,7 +126,7 @@ function App() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`/api/conversations/${activeChatId}/messages`, {
+      const response = await fetch(`${API_BASE}/api/conversations/${activeChatId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: content }),
@@ -163,7 +165,7 @@ function App() {
     }
 
     try {
-      const response = await fetch(`/api/conversations/${id}/cancel`, {
+      const response = await fetch(`${API_BASE}/api/conversations/${id}/cancel`, {
         method: 'POST',
       });
 
