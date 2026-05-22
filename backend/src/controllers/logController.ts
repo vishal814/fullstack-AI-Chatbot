@@ -219,7 +219,7 @@ export const getDashboardMetrics = async (req: Request, res: Response) => {
       const secDate = new Date(secTime);
       const timeLabel = secDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       
-      const count = throughputLogs.filter(log => {
+      const count = throughputLogs.filter((log: { timestamp: Date }) => {
         const logTime = new Date(log.timestamp).getTime();
         return logTime >= secTime && logTime < secTime + 1000;
       }).length;
